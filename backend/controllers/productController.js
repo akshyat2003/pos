@@ -34,7 +34,7 @@ export const createProduct = async (req, res) => {
       name,
       category,
       price: Number(price),
-      stock: stock !== undefined ? Number(stock) : 50,
+      stock: stock !== undefined ? Math.max(0, parseInt(stock) || 0) : 50,
       description: description || ''
     });
 
@@ -56,7 +56,7 @@ export const updateProduct = async (req, res) => {
         ...(name && { name }),
         ...(category && { category }),
         ...(price !== undefined && { price: Number(price) }),
-        ...(stock !== undefined && { stock: Number(stock) }),
+        ...(stock !== undefined && { stock: Math.max(0, parseInt(stock) || 0) }),
         ...(description !== undefined && { description }),
       },
       { new: true, runValidators: true }

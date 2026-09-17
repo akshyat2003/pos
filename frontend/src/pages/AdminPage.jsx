@@ -402,8 +402,8 @@ export default function AdminPage() {
                     <td><span className="cat-badge">{p.category}</span></td>
                     <td className="price-col">${Number(p.price).toFixed(2)}</td>
                     <td>
-                      <span className={`stock-badge ${p.stock < 10 ? 'low' : ''}`}>
-                        {p.stock} units
+                      <span className={`stock-badge ${Number(p.stock) <= 0 ? 'low' : Number(p.stock) < 10 ? 'low' : ''}`}>
+                        {Math.max(0, Number(p.stock) || 0)} units {Number(p.stock) <= 0 ? '(Stockout)' : ''}
                       </span>
                     </td>
                     <td className="desc-col">{p.description || '—'}</td>
@@ -482,6 +482,7 @@ export default function AdminPage() {
                 <label>Stock Quantity</label>
                 <input
                   type="number"
+                  min="0"
                   placeholder="50"
                   value={prodStock}
                   onChange={(e) => setProdStock(e.target.value)}
@@ -632,6 +633,7 @@ export default function AdminPage() {
                   <label>Stock</label>
                   <input
                     type="number"
+                    min="0"
                     value={editProdStock}
                     onChange={(e) => setEditProdStock(e.target.value)}
                   />
