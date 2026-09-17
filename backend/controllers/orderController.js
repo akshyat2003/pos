@@ -15,6 +15,26 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'Customer name, phone, and address are required' });
     }
 
+    // Check stock availability for all products before placing order
+    for (const item of items) {
+      const prodId = item.productId || item.id;
+      if (prodId) {
+        const prod = await Product.findById(prodId);
+        if (prod) {
+          if (prod.stock <= 0) {
+            return res.status(400).json({
+              message: `"${prod.name}" is out of stock.`
+            });
+          }
+          if (prod.stock < item.quantity) {
+            return res.status(400).json({
+              message: `Cannot order ${item.quantity} units of "${prod.name}". Only ${prod.stock} unit(s) available.`
+            });
+          }
+        }
+      }
+    }
+
     // Calculate total amount
     const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -54,15 +74,14 @@ export const createOrder = async (req, res) => {
       status: 'Completed'
     });
 
-    // Deduct stock from products
+    // Deduct stock safely (never drop below 0)
     for (const item of items) {
-      if (item.productId || item.id) {
-        try {
-          await Product.findByIdAndUpdate(item.productId || item.id, {
-            $inc: { stock: -item.quantity }
-          });
-        } catch {
-          // Ignore if invalid ID
+      const prodId = item.productId || item.id;
+      if (prodId) {
+        const prod = await Product.findById(prodId);
+        if (prod) {
+          prod.stock = Math.max(0, prod.stock - item.quantity);
+          await prod.save();
         }
       }
     }

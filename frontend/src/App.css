@@ -208,6 +208,18 @@ main {
   color: var(--text-light);
 }
 
+.product-stock-tag.stockout {
+  color: #dc2626;
+  font-weight: 700;
+  background: #fef2f2;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.product-card.is-stockout {
+  opacity: 0.75;
+}
+
 .product-title {
   font-size: 1rem;
   font-weight: 600;

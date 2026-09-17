@@ -47,12 +47,23 @@ export default function App() {
     loadProducts();
   }, [loadProducts]);
 
-  // Add product to cart directly
+  // Add product to cart directly with stock limit check
   const handleAddToCart = (product) => {
     const prodId = product._id || product.id;
+    const availableStock = Number(product.stock) || 0;
+
+    if (availableStock <= 0) {
+      alert(`"${product.name}" is currently Stockout (0 units available).`);
+      return;
+    }
+
     setCart((prev) => {
       const existing = prev.find((item) => item.id === prodId);
       if (existing) {
+        if (existing.quantity >= availableStock) {
+          alert(`Stockout limit reached! Only ${availableStock} unit(s) of "${product.name}" in stock.`);
+          return prev;
+        }
         return prev.map((item) =>
           item.id === prodId ? { ...item, quantity: item.quantity + 1 } : item
         );
@@ -65,6 +76,7 @@ export default function App() {
           name: product.name,
           price: Number(product.price),
           quantity: 1,
+          maxStock: availableStock,
         },
       ];
     });
@@ -73,11 +85,23 @@ export default function App() {
   const handleUpdateQty = (id, newQty) => {
     if (newQty <= 0) {
       handleRemoveItem(id);
-    } else {
-      setCart((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity: newQty } : item))
-      );
+      return;
     }
+
+    const matchedProduct = products.find((p) => (p._id || p.id) === id);
+    const availableStock = matchedProduct ? Number(matchedProduct.stock) : 999;
+
+    if (newQty > availableStock) {
+      alert(`Stockout! Only ${availableStock} unit(s) available in stock.`);
+      setCart((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, quantity: availableStock } : item))
+      );
+      return;
+    }
+
+    setCart((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, quantity: newQty } : item))
+    );
   };
 
   const handleRemoveItem = (id) => {
