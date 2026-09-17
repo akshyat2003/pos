@@ -28,13 +28,7 @@ export default function AdminPage() {
   const [editProdStock, setEditProdStock] = useState('');
   const [editProdDesc, setEditProdDesc] = useState('');
 
-  // Add User Form State
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserPhone, setNewUserPhone] = useState('');
-  const [newUserAddress, setNewUserAddress] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [isAddingUser, setIsAddingUser] = useState(false);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
+
 
   // Edit User Modal State
   const [editingUser, setEditingUser] = useState(null);
@@ -143,36 +137,7 @@ export default function AdminPage() {
     }
   };
 
-  // --- USER CRUD ---
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    if (!newUserName.trim() || !newUserPhone.trim() || !newUserAddress.trim()) {
-      alert('Name, Phone, and Address are required.');
-      return;
-    }
-
-    try {
-      setIsAddingUser(true);
-      await userApi.create({
-        name: newUserName.trim(),
-        phone: newUserPhone.trim(),
-        address: newUserAddress.trim(),
-        email: newUserEmail.trim(),
-      });
-
-      setNewUserName('');
-      setNewUserPhone('');
-      setNewUserAddress('');
-      setNewUserEmail('');
-      setShowAddUserModal(false);
-      alert('Customer created successfully in MongoDB!');
-      await loadAdminData();
-    } catch (err) {
-      alert(`Failed to create user: ${err.message}`);
-    } finally {
-      setIsAddingUser(false);
-    }
-  };
+  // --- USER EDIT & DELETE ONLY ---
 
   const openEditUserModal = (u) => {
     setEditingUser(u);
@@ -515,7 +480,7 @@ export default function AdminPage() {
               <h3>Customer & User Database</h3>
               <span className="admin-card-caption">Total: {filteredUsers.length} Users</span>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <div>
               <input
                 type="text"
                 placeholder="Search customers..."
@@ -523,13 +488,6 @@ export default function AdminPage() {
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
               />
-              <button
-                className="btn-admin-submit"
-                style={{ margin: 0, padding: '0.5rem 1rem' }}
-                onClick={() => setShowAddUserModal(true)}
-              >
-                + Add Customer
-              </button>
             </div>
           </div>
 
@@ -662,71 +620,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ADD USER MODAL */}
-      {showAddUserModal && (
-        <div className="modal-overlay" onClick={() => setShowAddUserModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Add New Customer</h3>
-              <button className="btn-close" onClick={() => setShowAddUserModal(false)}>✕</button>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="modal-form">
-              <div className="form-group">
-                <label>Full Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Sarah Connor"
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Phone Number</label>
-                <input
-                  type="tel"
-                  placeholder="e.g. +1 555-0188"
-                  value={newUserPhone}
-                  onChange={(e) => setNewUserPhone(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Delivery Address</label>
-                <textarea
-                  rows="2"
-                  placeholder="e.g. 742 Evergreen Terrace"
-                  value={newUserAddress}
-                  onChange={(e) => setNewUserAddress(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Email (Optional)</label>
-                <input
-                  type="email"
-                  placeholder="e.g. sarah@example.com"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowAddUserModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary" disabled={isAddingUser}>
-                  {isAddingUser ? 'Saving...' : 'Add Customer'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* EDIT USER MODAL */}
       {editingUser && (
