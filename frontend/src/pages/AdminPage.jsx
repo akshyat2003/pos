@@ -35,7 +35,8 @@ export default function AdminPage() {
   const [editUserName, setEditUserName] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserAddress, setEditUserAddress] = useState('');
-  const [editUserEmail, setEditUserEmail] = useState('');
+  // Selected Order for Details View
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Inventory Search Filter
   const [inventorySearch, setInventorySearch] = useState('');
@@ -291,6 +292,7 @@ export default function AdminPage() {
                     <th>Items Purchased</th>
                     <th>Total</th>
                     <th>Status</th>
+                    <th>Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -308,7 +310,7 @@ export default function AdminPage() {
                         <div className="items-list-compact">
                           {order.items?.map((item, idx) => (
                             <span key={idx} className="item-pill">
-                              {item.name} × <strong>{item.quantity}</strong> (${item.price?.toFixed(2)})
+                              {item.name} × <strong>{item.quantity}</strong> (${Number(item.price).toFixed(2)})
                             </span>
                           ))}
                         </div>
@@ -316,6 +318,14 @@ export default function AdminPage() {
                       <td className="price-col">${Number(order.totalAmount).toFixed(2)}</td>
                       <td>
                         <span className="badge-status-completed">{order.status || 'Completed'}</span>
+                      </td>
+                      <td>
+                        <button
+                          className="btn-action-edit"
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          View
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -679,6 +689,90 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ORDER DETAILS BREAKDOWN MODAL */}
+      {selectedOrder && (
+        <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
+          <div className="modal-content" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Order Details</h3>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                  Database Record: {selectedOrder._id || selectedOrder.id}
+                </span>
+              </div>
+              <button className="btn-close" onClick={() => setSelectedOrder(null)}>✕</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Customer Details</div>
+                <div style={{ fontWeight: 700, color: '#0f172a', marginTop: '0.25rem' }}>{selectedOrder.user?.name || 'Customer'}</div>
+                <div style={{ fontSize: '0.85rem', color: '#334155' }}>Phone: {selectedOrder.user?.phone || '—'}</div>
+                <div style={{ fontSize: '0.85rem', color: '#334155' }}>Address: {selectedOrder.user?.address || '—'}</div>
+                {selectedOrder.user?.email && <div style={{ fontSize: '0.85rem', color: '#334155' }}>Email: {selectedOrder.user?.email}</div>}
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Order Details</div>
+                <div style={{ fontSize: '0.85rem', color: '#334155', marginTop: '0.25rem' }}>
+                  <strong>Timestamp:</strong> {formatDate(selectedOrder.createdAt)}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#334155' }}>
+                  <strong>Status:</strong> <span className="badge-status-completed">{selectedOrder.status || 'Completed'}</span>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#334155' }}>
+                  <strong>Payment:</strong> {selectedOrder.paymentMethod || 'Cash / Card'}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.5rem' }}>Products Purchased</h4>
+              <div className="table-responsive">
+                <table className="admin-table" style={{ fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Product Name</th>
+                      <th>Category</th>
+                      <th>Unit Price</th>
+                      <th>Qty</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedOrder.items?.map((item, idx) => (
+                      <tr key={idx}>
+                        <td><strong>{item.name}</strong></td>
+                        <td><span className="cat-badge">{item.category || 'Standard'}</span></td>
+                        <td>${Number(item.price).toFixed(2)}</td>
+                        <td>{item.quantity}</td>
+                        <td className="price-col">${Number(item.subtotal || item.price * item.quantity).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+              <span style={{ fontWeight: 600, color: '#475569' }}>Total Order Amount:</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>
+                ${Number(selectedOrder.totalAmount).toFixed(2)}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className="btn-admin-refresh"
+              style={{ width: '100%', marginTop: '0.5rem' }}
+              onClick={() => setSelectedOrder(null)}
+            >
+              Close Details
+            </button>
           </div>
         </div>
       )}

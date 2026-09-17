@@ -74,8 +74,10 @@ export default function App() {
           id: prodId,
           productId: prodId,
           name: product.name,
+          category: product.category || '',
           price: Number(product.price),
           quantity: 1,
+          description: product.description || '',
           maxStock: availableStock,
         },
       ];

@@ -65,9 +65,11 @@ export const createOrder = async (req, res) => {
       items: items.map(item => ({
         productId: item.productId || item.id,
         name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        subtotal: item.price * item.quantity
+        category: item.category || '',
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        subtotal: Number((Number(item.price) * Number(item.quantity)).toFixed(2)),
+        description: item.description || ''
       })),
       totalAmount: Number(totalAmount.toFixed(2)),
       paymentMethod: paymentMethod || 'Cash / Card',

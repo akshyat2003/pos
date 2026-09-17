@@ -10,6 +10,10 @@ const orderItemSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  category: {
+    type: String,
+    default: ''
+  },
   price: {
     type: Number,
     required: true
@@ -22,6 +26,10 @@ const orderItemSchema = new mongoose.Schema({
   subtotal: {
     type: Number,
     required: true
+  },
+  description: {
+    type: String,
+    default: ''
   }
 });
 
