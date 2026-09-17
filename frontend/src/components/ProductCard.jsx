@@ -1,12 +1,13 @@
 export default function ProductCard({ product, onAddToCart }) {
-  const isStockout = !product.stock || product.stock <= 0;
+  const stock = Math.max(0, Number(product.stock) || 0);
+  const isStockout = stock <= 0;
 
   return (
     <div className={`product-card ${isStockout ? 'is-stockout' : ''}`}>
       <div className="product-card-top">
         <span className="product-category-tag">{product.category}</span>
         <span className={`product-stock-tag ${isStockout ? 'stockout' : ''}`}>
-          {isStockout ? 'Stockout (0 in stock)' : `${product.stock} in stock`}
+          {isStockout ? 'Stockout (0 in stock)' : `${stock} in stock`}
         </span>
       </div>
 
