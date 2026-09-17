@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [editUserName, setEditUserName] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserAddress, setEditUserAddress] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
   // Selected Order for Details View
   const [selectedOrder, setSelectedOrder] = useState(null);
 

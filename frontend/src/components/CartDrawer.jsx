@@ -75,7 +75,7 @@ export default function CartDrawer({
           onClick={onOpenCheckout}
           disabled={cart.length === 0}
         >
-          Buy Now ($${totalAmount.toFixed(2)})
+          Buy Now (${totalAmount.toFixed(2)})
         </button>
 
         {cart.length > 0 && (
