@@ -2,13 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import ShopPage from './pages/ShopPage';
 import AdminPage from './pages/AdminPage';
+import UserAuthPage from './pages/UserAuthPage';
+import AdminLoginPage from './pages/AdminLoginPage';
 import CustomerModal from './components/CustomerModal';
 import { productApi } from './api/productApi';
 import { orderApi } from './api/orderApi';
+import { authApi } from './api/authApi';
 import './App.css';
 
+const getStored = (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
+
 export default function App() {
-  const [currentView, setCurrentView] = useState('store'); // 'store' | 'admin'
+  const [currentView, setCurrentView] = useState('store');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -17,135 +22,114 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load saved customer info if previously used
+  const [currentUser, setCurrentUser] = useState(() => getStored('pos_user'));
+  const [adminUser, setAdminUser] = useState(() => getStored('pos_admin'));
   const [customerInfo, setCustomerInfo] = useState(() => {
-    try {
-      const saved = localStorage.getItem('pos_customer');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+    const u = getStored('pos_user');
+    return u ? { name: u.name || '', phone: u.phone || '', address: u.address || '' } : getStored('pos_customer');
   });
 
-  // Fetch product catalog & categories from MongoDB backend
+  // Verify active JWT cookie + MongoDB session on load
+  useEffect(() => {
+    authApi.getMe()
+      .then(res => {
+        if (res.user?.role === 'admin') setAdminUser(res.user);
+        else {
+          setCurrentUser(res.user);
+          setCustomerInfo({ name: res.user.name || '', phone: res.user.phone || '', address: res.user.address || '' });
+        }
+      })
+      .catch(() => {
+        setCurrentUser(null);
+        setAdminUser(null);
+        localStorage.removeItem('pos_user');
+        localStorage.removeItem('pos_admin');
+      });
+  }, []);
+
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const prodsData = await productApi.getAll();
-      setProducts(prodsData || []);
-
-      const catsData = await productApi.getCategories();
-      setCategories(catsData?.length ? catsData : ['Beverages', 'Bakery', 'Food', 'Snacks', 'Electronics', 'Accessories']);
+      const [p, c] = await Promise.all([productApi.getAll(), productApi.getCategories()]);
+      setProducts(p || []);
+      setCategories(c?.length ? c : ['Beverages', 'Bakery', 'Food', 'Snacks', 'Electronics', 'Accessories']);
     } catch (err) {
-      console.error('Failed to load products:', err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+  useEffect(() => { loadProducts(); }, [loadProducts]);
 
-  // Add product to cart directly with stock limit check
+  const handleUserLoginSuccess = (user) => {
+    setCurrentUser(user);
+    localStorage.setItem('pos_user', JSON.stringify(user));
+    setCustomerInfo({ name: user.name || '', phone: user.phone || '', address: user.address || '' });
+    setCurrentView('store');
+  };
+
+  const handleUserLogout = async () => {
+    try { await authApi.logout(); } catch (err) { console.error(err); }
+    setCurrentUser(null);
+    setCart([]);
+    localStorage.removeItem('pos_user');
+    localStorage.removeItem('pos_customer');
+    setCurrentView('user-auth');
+  };
+
+  const handleAdminLoginSuccess = (admin) => {
+    setAdminUser(admin);
+    localStorage.setItem('pos_admin', JSON.stringify(admin));
+    setCurrentView('admin');
+  };
+
+  const handleAdminLogout = async () => {
+    try { await authApi.logout(); } catch (err) { console.error(err); }
+    setAdminUser(null);
+    localStorage.removeItem('pos_admin');
+    setCurrentView(currentUser ? 'store' : 'user-auth');
+  };
+
   const handleAddToCart = (product) => {
-    const prodId = product._id || product.id;
-    const availableStock = Number(product.stock) || 0;
+    const id = product._id || product.id;
+    const stock = Number(product.stock) || 0;
+    if (stock <= 0) return alert(`"${product.name}" is Stockout.`);
 
-    if (availableStock <= 0) {
-      alert(`"${product.name}" is currently Stockout (0 units available).`);
-      return;
-    }
-
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === prodId);
+    setCart(prev => {
+      const existing = prev.find(i => i.id === id);
       if (existing) {
-        if (existing.quantity >= availableStock) {
-          alert(`Stockout limit reached! Only ${availableStock} unit(s) of "${product.name}" in stock.`);
-          return prev;
-        }
-        return prev.map((item) =>
-          item.id === prodId ? { ...item, quantity: item.quantity + 1 } : item
-        );
+        if (existing.quantity >= stock) return (alert(`Limit reached! Only ${stock} units available.`), prev);
+        return prev.map(i => i.id === id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [
-        ...prev,
-        {
-          id: prodId,
-          productId: prodId,
-          name: product.name,
-          category: product.category || '',
-          price: Number(product.price),
-          quantity: 1,
-          description: product.description || '',
-          maxStock: availableStock,
-        },
-      ];
+      return [...prev, { id, productId: id, name: product.name, category: product.category, price: Number(product.price), quantity: 1, description: product.description, maxStock: stock }];
     });
   };
 
   const handleUpdateQty = (id, newQty) => {
-    if (newQty <= 0) {
-      handleRemoveItem(id);
-      return;
-    }
-
-    const matchedProduct = products.find((p) => (p._id || p.id) === id);
-    const availableStock = matchedProduct ? Number(matchedProduct.stock) : 999;
-
-    if (newQty > availableStock) {
-      alert(`Stockout! Only ${availableStock} unit(s) available in stock.`);
-      setCart((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, quantity: availableStock } : item))
-      );
-      return;
-    }
-
-    setCart((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity: newQty } : item))
-    );
+    if (newQty <= 0) return setCart(prev => prev.filter(i => i.id !== id));
+    const prod = products.find(p => (p._id || p.id) === id);
+    const stock = prod ? Number(prod.stock) : 999;
+    if (newQty > stock) return (alert(`Only ${stock} unit(s) available.`), setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: stock } : i)));
+    setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
   };
 
-  const handleRemoveItem = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const handleClearCart = () => setCart([]);
-
-  // Open checkout modal when clicking "Buy Now"
-  const handleOpenCheckout = () => {
-    if (cart.length === 0) return;
-    setIsCheckoutOpen(true);
-  };
-
-  // Confirm order and save to database
-  const handleConfirmOrder = async (customerData) => {
+  const handleConfirmOrder = async (data) => {
     try {
       setIsProcessing(true);
-      setCustomerInfo(customerData);
+      setCustomerInfo(data);
+      localStorage.setItem('pos_customer', JSON.stringify(data));
 
-      try {
-        localStorage.setItem('pos_customer', JSON.stringify(customerData));
-      } catch {
-        // Ignore storage error
-      }
-
-      const payload = {
-        user: {
-          name: customerData.name,
-          phone: customerData.phone,
-          address: customerData.address,
-        },
+      await orderApi.create({
+        user: { userId: currentUser?._id, name: data.name, phone: data.phone, address: data.address, email: currentUser?.email || '' },
         items: cart,
         paymentMethod: 'Cash / Card',
-      };
+      });
 
-      await orderApi.create(payload);
       setCart([]);
       setIsCheckoutOpen(false);
       await loadProducts();
-
-      alert(`Purchase completed!\n\nCustomer: ${customerData.name}\nPhone: ${customerData.phone}\nDelivery Address: ${customerData.address}\n\nRecorded successfully in database.`);
+      alert(`Purchase completed!\n\nCustomer: ${data.name}\nPhone: ${data.phone}\nAddress: ${data.address}\n\nRecorded successfully.`);
     } catch (err) {
       alert(`Order submission failed: ${err.message}`);
     } finally {
@@ -153,30 +137,53 @@ export default function App() {
     }
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const cartItemsCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
     <div className="app">
-      <Navbar currentView={currentView} setCurrentView={setCurrentView} />
+      <Navbar
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        currentUser={currentUser}
+        onUserLogout={handleUserLogout}
+        adminUser={adminUser}
+        onAdminLogout={handleAdminLogout}
+      />
 
       <main>
-        {currentView === 'store' ? (
-          <ShopPage
-            products={products}
-            categories={categories}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            cart={cart}
-            onAddToCart={handleAddToCart}
-            onUpdateQty={handleUpdateQty}
-            onRemoveItem={handleRemoveItem}
-            onClearCart={handleClearCart}
-            onOpenCheckout={handleOpenCheckout}
-            loading={loading}
-          />
-        ) : (
-          <AdminPage />
+        {currentView === 'store' && (
+          currentUser ? (
+            <ShopPage
+              products={products}
+              categories={categories}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              cart={cart}
+              onAddToCart={handleAddToCart}
+              onUpdateQty={handleUpdateQty}
+              onRemoveItem={id => setCart(prev => prev.filter(i => i.id !== id))}
+              onClearCart={() => setCart([])}
+              onOpenCheckout={() => cart.length > 0 && setIsCheckoutOpen(true)}
+              loading={loading}
+              currentUser={currentUser}
+              onGoToAuth={() => setCurrentView('user-auth')}
+            />
+          ) : (
+            <UserAuthPage onLoginSuccess={handleUserLoginSuccess} onCancel={null} />
+          )
+        )}
+
+        {currentView === 'user-auth' && (
+          <UserAuthPage onLoginSuccess={handleUserLoginSuccess} onCancel={currentUser ? () => setCurrentView('store') : null} />
+        )}
+
+        {currentView === 'admin' && (
+          adminUser ? (
+            <AdminPage onLogout={handleAdminLogout} />
+          ) : (
+            <AdminLoginPage onLoginSuccess={handleAdminLoginSuccess} onCancel={() => setCurrentView(currentUser ? 'store' : 'user-auth')} />
+          )
         )}
       </main>
 

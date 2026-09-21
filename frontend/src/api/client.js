@@ -1,12 +1,10 @@
-// Base API client
+// Base API client with credentials for HTTP-only cookies
 const API_BASE = '/api';
 
 export const request = async (endpoint, options = {}) => {
   const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   };
 

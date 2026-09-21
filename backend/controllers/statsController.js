@@ -4,33 +4,28 @@ import { Order } from '../models/Order.js';
 
 export const getDatabaseStats = async (req, res) => {
   try {
-    const userCount = await User.countDocuments();
-    const productCount = await Product.countDocuments();
-    const orderCount = await Order.countDocuments();
-
-    // Aggregate total sales
-    const salesAgg = await Order.aggregate([
-      { $match: { status: 'Completed' } },
-      { $group: { _id: null, totalSales: { $sum: '$totalAmount' }, totalItemsBought: { $sum: { $sum: '$items.quantity' } } } }
+    const [users, products, orders, salesAgg, recentOrders] = await Promise.all([
+      User.countDocuments(),
+      Product.countDocuments(),
+      Order.countDocuments(),
+      Order.aggregate([
+        { $match: { status: 'Completed' } },
+        { $group: { _id: null, totalSales: { $sum: '$totalAmount' }, totalItems: { $sum: { $sum: '$items.quantity' } } } }
+      ]),
+      Order.find().sort({ createdAt: -1 }).limit(10)
     ]);
-
-    const totalSales = salesAgg[0]?.totalSales || 0;
-    const totalItemsSold = salesAgg[0]?.totalItemsBought || 0;
-
-    // Recent orders with timestamps
-    const recentOrders = await Order.find().sort({ createdAt: -1 }).limit(10);
 
     res.json({
       counts: {
-        users: userCount,
-        products: productCount,
-        orders: orderCount,
-        totalSales: Number(totalSales.toFixed(2)),
-        totalItemsSold
+        users,
+        products,
+        orders,
+        totalSales: Number((salesAgg[0]?.totalSales || 0).toFixed(2)),
+        totalItemsSold: salesAgg[0]?.totalItems || 0
       },
       recentOrders
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching database statistics', error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

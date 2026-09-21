@@ -4,77 +4,35 @@ import ProductCard from '../components/ProductCard';
 import CartDrawer from '../components/CartDrawer';
 
 export default function ShopPage({
-  products,
-  categories,
-  selectedCategory,
-  setSelectedCategory,
-  cart,
-  onAddToCart,
-  onUpdateQty,
-  onRemoveItem,
-  onClearCart,
-  onOpenCheckout,
-  loading,
+  products, categories, selectedCategory, setSelectedCategory,
+  cart, onAddToCart, onUpdateQty, onRemoveItem, onClearCart, onOpenCheckout,
+  loading, currentUser
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredProducts = products.filter((p) => {
-    const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
+  const [search, setSearch] = useState('');
+  const q = search.toLowerCase();
+  const filtered = products.filter(p =>
+    (selectedCategory === 'All' || p.category === selectedCategory) &&
+    (p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+  );
 
   return (
     <div className="shop-layout">
       <div className="shop-main-column">
-        {/* Search & Categories */}
+        {currentUser && <div className="shop-user-banner"><span>👋 Welcome, <strong>{currentUser.name}</strong>! Browse products below and place your order.</span></div>}
         <div className="shop-toolbar">
           <div className="search-bar-wrap">
-            <input
-              type="text"
-              placeholder="Search products by name or category..."
-              className="search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <input type="text" placeholder="Search products by name or category..." className="search-input" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-
-          <CategoryFilter
-            categories={['All', ...categories]}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
+          <CategoryFilter categories={['All', ...categories]} selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
         </div>
 
-        {/* Product Grid */}
-        {loading ? (
-          <div className="loading-container">Loading products...</div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="empty-catalog">
-            <p>No products found in this category.</p>
-          </div>
+        {loading ? <div className="loading-container">Loading products...</div> : !filtered.length ? (
+          <div className="empty-catalog"><p>No products found in this category.</p></div>
         ) : (
-          <div className="products-grid">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product._id || product.id}
-                product={product}
-                onAddToCart={onAddToCart}
-              />
-            ))}
-          </div>
+          <div className="products-grid">{filtered.map(p => <ProductCard key={p._id || p.id} product={p} onAddToCart={onAddToCart} />)}</div>
         )}
       </div>
-
-      {/* Cart Column */}
-      <CartDrawer
-        cart={cart}
-        onUpdateQty={onUpdateQty}
-        onRemoveItem={onRemoveItem}
-        onClearCart={onClearCart}
-        onOpenCheckout={onOpenCheckout}
-      />
+      <CartDrawer cart={cart} onUpdateQty={onUpdateQty} onRemoveItem={onRemoveItem} onClearCart={onClearCart} onOpenCheckout={onOpenCheckout} />
     </div>
   );
 }

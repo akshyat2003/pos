@@ -1,18 +1,19 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import dns from 'dns';
 import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
 import { Order } from '../models/Order.js';
+
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch (e) {}
 
 dotenv.config();
 
 async function cleanAll() {
   try {
-    const uri = process.env.MONGO_URI;
-    if (!uri) {
-      console.error('No MONGO_URI in .env');
-      process.exit(1);
-    }
+    const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/pos_system';
 
     console.log('Connecting to MongoDB Atlas...');
     await mongoose.connect(uri);
