@@ -14,14 +14,15 @@ export const getCategories = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, category, price, stock, description } = req.body;
-    if (!name || !category || price === undefined) {
+    const { name, category, price, stock, description, imageUrl } = req.body;
+    if (!name?.trim() || !category?.trim() || price === undefined) {
       return res.status(400).json({ message: 'Name, category, and price are required' });
     }
     const product = await Product.create({
-      name: name.trim(), category, price: Number(price),
-      stock: stock !== undefined ? Math.max(0, parseInt(stock) || 0) : 50,
-      description: description ? description.trim() : ''
+      name: name.trim(), category: category.trim(), price: Number(price),
+      stock: stock !== undefined ? Math.max(0, parseInt(stock) || 0) : 0,
+      description: description ? description.trim() : '',
+      imageUrl: imageUrl ? imageUrl.trim() : ''
     });
     res.status(201).json(product);
   } catch (err) { res.status(500).json({ message: err.message }); }

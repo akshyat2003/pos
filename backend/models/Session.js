@@ -8,6 +8,7 @@ const sessionSchema = new mongoose.Schema({
   ipAddress: { type: String, default: '127.0.0.1' },
   userAgent: { type: String, default: 'Browser' },
   isValid: { type: Boolean, default: true },
+  lastActiveAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true }
 }, { timestamps: true });
 

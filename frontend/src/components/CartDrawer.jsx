@@ -18,6 +18,9 @@ export default function CartDrawer({ cart, onUpdateQty, onRemoveItem, onClearCar
         <div className="cart-items-list">
           {cart.map(item => (
             <div key={item.id} className="cart-item-row">
+              {item.imageUrl && (
+                <img src={item.imageUrl} alt={item.name} className="cart-item-thumb" />
+              )}
               <div className="cart-item-details">
                 <span className="cart-item-name">{item.name}</span>
                 <span className="cart-item-price">${(item.price * item.quantity).toFixed(2)}</span>

@@ -1,9 +1,23 @@
+import { useState } from 'react';
+
 export default function ProductCard({ product, onAddToCart }) {
+  const [imgError, setImgError] = useState(false);
   const stock = Math.max(0, Number(product.stock) || 0);
   const isStockout = stock <= 0;
 
   return (
     <div className={`product-card ${isStockout ? 'is-stockout' : ''}`}>
+      {product.imageUrl && !imgError ? (
+        <div className="product-card-img-wrap">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="product-card-img"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        </div>
+      ) : null}
       <div className="product-card-top">
         <span className="product-category-tag">{product.category}</span>
         <span className={`product-stock-tag ${isStockout ? 'stockout' : ''}`}>

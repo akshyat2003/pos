@@ -15,6 +15,7 @@ const createSessionAndToken = async (req, res, { userId, name, email, role }) =>
     role,
     ipAddress: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1',
     userAgent: req.headers['user-agent'] || 'Browser',
+    lastActiveAt: new Date(),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   });
 
@@ -101,7 +102,15 @@ export const getMe = async (req, res) => {
 
 export const getSessions = async (req, res) => {
   try {
-    const sessions = await Session.find({ isValid: true, expiresAt: { $gt: new Date() } }).sort({ createdAt: -1 });
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const sessions = await Session.find({
+      isValid: true,
+      expiresAt: { $gt: new Date() },
+      $or: [
+        { lastActiveAt: { $gt: fifteenMinsAgo } },
+        { lastActiveAt: { $exists: false }, createdAt: { $gt: fifteenMinsAgo } }
+      ]
+    }).sort({ lastActiveAt: -1, createdAt: -1 });
     res.json(sessions);
   } catch (err) { res.status(500).json({ message: err.message }); }
 };

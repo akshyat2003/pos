@@ -11,7 +11,11 @@ export const request = async (endpoint, options = {}) => {
   const response = await fetch(`${API_BASE}${endpoint}`, config);
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    const message = errorData.message || `HTTP error! status: ${response.status}`;
+    if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/admin-login') && !endpoint.includes('/auth/register') && !endpoint.includes('/auth/me')) {
+      window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { message } }));
+    }
+    throw new Error(message);
   }
   return response.json();
 };
