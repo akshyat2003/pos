@@ -6,7 +6,7 @@ import CartDrawer from '../components/CartDrawer';
 export default function ShopPage({
   products, categories, selectedCategory, setSelectedCategory,
   cart, onAddToCart, onUpdateQty, onRemoveItem, onClearCart, onOpenCheckout,
-  loading, currentUser
+  loading, currentUser, onOpenProfile
 }) {
   const [search, setSearch] = useState('');
   const q = search.toLowerCase();
@@ -18,7 +18,16 @@ export default function ShopPage({
   return (
     <div className="shop-layout">
       <div className="shop-main-column">
-        {currentUser && <div className="shop-user-banner"><span>👋 Welcome, <strong>{currentUser.name}</strong>! Browse products below and place your order.</span></div>}
+        {currentUser && (
+          <div className="shop-user-banner">
+            <span>👋 Welcome, <strong>{currentUser.name}</strong>! Browse products below and place your order.</span>
+            {onOpenProfile && (
+              <button type="button" className="btn-banner-profile" onClick={onOpenProfile}>
+                👤 My Profile
+              </button>
+            )}
+          </div>
+        )}
         <div className="shop-toolbar">
           <div className="search-bar-wrap">
             <input type="text" placeholder="Search products by name or category..." className="search-input" value={search} onChange={e => setSearch(e.target.value)} />

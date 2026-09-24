@@ -7,10 +7,12 @@ export function Modal({ title, subtitle, onClose, maxWidth, children }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" style={maxWidth ? { maxWidth } : undefined} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div><h3 style={{ margin: 0 }}>{title}</h3>{subtitle && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{subtitle}</span>}</div>
-          <button className="btn-close" onClick={onClose}>✕</button>
+          <div><h3 style={{ margin: 0, fontSize: '1.15rem' }}>{title}</h3>{subtitle && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{subtitle}</span>}</div>
+          <button type="button" className="btn-close" onClick={onClose}>✕</button>
         </div>
-        {children}
+        <div className="profile-modal-body">
+          {children}
+        </div>
       </div>
     </div>
   );

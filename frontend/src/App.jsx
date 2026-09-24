@@ -5,6 +5,7 @@ import AdminPage from './pages/AdminPage';
 import UserAuthPage from './pages/UserAuthPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import CustomerModal from './components/CustomerModal';
+import UserProfileModal from './components/UserProfileModal';
 import { productApi } from './api/productApi';
 import { orderApi } from './api/orderApi';
 import { authApi } from './api/authApi';
@@ -22,6 +23,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [cart, setCart] = useState([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [customerInfo, setCustomerInfo] = useState(() => {
@@ -113,6 +115,16 @@ export default function App() {
     handleNavigate(currentUser ? 'store' : 'admin-login');
   };
 
+  const handleUpdateProfileUser = (updatedUser) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('pos_user', JSON.stringify(updatedUser));
+    setCustomerInfo({
+      name: updatedUser.name || '',
+      phone: updatedUser.phone || '',
+      address: updatedUser.address || ''
+    });
+  };
+
   const handleAddToCart = (product) => {
     const id = product._id || product.id;
     const stock = Number(product.stock) || 0;
@@ -172,11 +184,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <Navbar currentView={currentView} setCurrentView={handleNavigate} currentUser={currentUser} onUserLogout={handleUserLogout} adminUser={adminUser} onAdminLogout={handleAdminLogout} />
+      <Navbar currentView={currentView} setCurrentView={handleNavigate} currentUser={currentUser} onUserLogout={handleUserLogout} adminUser={adminUser} onAdminLogout={handleAdminLogout} onOpenProfile={() => setIsProfileOpen(true)} />
       <main>
         {currentView === 'store' && (
           currentUser ? (
-            <ShopPage products={products} categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} cart={cart} onAddToCart={handleAddToCart} onUpdateQty={handleUpdateQty} onRemoveItem={(id) => setCart((p) => p.filter((i) => i.id !== id))} onClearCart={() => setCart([])} onOpenCheckout={() => cart.length > 0 && setIsCheckoutOpen(true)} loading={loading} currentUser={currentUser} onGoToAuth={() => handleNavigate('user-auth')} />
+            <ShopPage products={products} categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} cart={cart} onAddToCart={handleAddToCart} onUpdateQty={handleUpdateQty} onRemoveItem={(id) => setCart((p) => p.filter((i) => i.id !== id))} onClearCart={() => setCart([])} onOpenCheckout={() => cart.length > 0 && setIsCheckoutOpen(true)} loading={loading} currentUser={currentUser} onGoToAuth={() => handleNavigate('user-auth')} onOpenProfile={() => setIsProfileOpen(true)} />
           ) : <UserAuthPage onLoginSuccess={handleUserLoginSuccess} onCancel={null} />
         )}
         {currentView === 'user-auth' && <UserAuthPage onLoginSuccess={handleUserLoginSuccess} onCancel={currentUser ? () => handleNavigate('store') : null} />}
@@ -184,6 +196,7 @@ export default function App() {
         {currentView === 'admin-login' && <AdminLoginPage onLoginSuccess={handleAdminLoginSuccess} onCancel={() => handleNavigate(currentUser ? 'store' : 'user-auth')} />}
       </main>
       <CustomerModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} onConfirmOrder={handleConfirmOrder} cartTotal={cartTotal} cartItemsCount={cartItemsCount} isProcessing={isProcessing} initialData={customerInfo} />
+      <UserProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} user={currentUser} onUpdateUser={handleUpdateProfileUser} />
     </div>
   );
 }
